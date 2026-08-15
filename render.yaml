@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: forum-v5
+    runtime: python
+    repo: https://github.com/yourusername/forum-v5
+    plan: free
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: FLASK_ENV
+        value: production
+      - key: DEBUG
+        value: false
+      - key: DATABASE_URL
+        value: sqlite:///database/forum.db
+    buildCommand: |
+      pip install -r requirements.txt
+      python scripts/init_db.py
+    startCommand: gunicorn run:app --workers 4 --bind 0.0.0.0:5000
