@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}📬 论坛 V5{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📬</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <nav class="navbar">
+                <div class="nav-left">
+                    <a href="/" class="brand">📬 论坛 V5</a>
+                    <a href="/" class="nav-link">首页</a>
+                    <a href="/new-post" class="nav-link">📝 发帖</a>
+                </div>
+                <div class="nav-right" id="navAuth">
+                    <a href="/login" class="nav-link">登录</a>
+                    <a href="/register" class="nav-link btn-primary">注册</a>
+                </div>
+            </nav>
+        </header>
+
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer class="footer">
+            <p>📬 论坛 V5 &copy; 2024 | 企业级全栈论坛 | MIT License</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script>
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+        if (token && user.username) {
+            document.querySelector('.nav-right').innerHTML = `
+                <span class="user-greeting">👋 ${user.username}</span>
+                <a href="/profile" class="nav-link">个人主页</a>
+                <a href="#" class="nav-link" onclick="logout()">退出</a>
+            `;
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>
