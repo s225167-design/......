@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "forum-v5"
+version = "5.0.0"
+description = "企业级全栈论坛"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Your Name", email = "your@email.com"}
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/forum-v5"
+Issues = "https://github.com/yourusername/forum-v5/issues"
