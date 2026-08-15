@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: forum-web
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=sqlite:///database/forum.db
+    volumes:
+      - ./database:/app/database
+      - ./static/uploads:/app/static/uploads
+    networks:
+      - forum-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: forum-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - forum-network
+
+networks:
+  forum-network:
+    driver: bridge
+
+volumes:
+  redis-data:
