@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}帖子详情 - 论坛 V5{% endblock %}
+
+{% block content %}
+<div id="postDetail">
+    <div class="loading">⏳ 加载中...</div>
+</div>
+
+<script>
+    const postId = {{ post_id }};
+
+    async function loadPost() {
+        try {
+            const res = await fetch(`/api/posts/${postId}`);
+            const post = await res.json();
+
+            if (post.error) {
+                document.getElementById('postDetail').innerHTML = `
+                    <div class="error-state">❌ ${post.error}</div>
+                    <a href="/" class="btn btn-outline">返回首页</a>
+                `;
+                return;
+            }
+
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            const isAuthor = user.id === post.user_id;
+            const isAdmin = user.is_admin;
+
+            let html = `
+                <div class="post-detail">
+                    <div class="post-detail-header">
+                        <h1>${escapeHtml(post.title)}</h1>
+                        <div class="post-detail-meta">
+                            <span>👤 ${escapeHtml(post.username || '匿名')}</span>
+                            <span>📅 ${formatTime(post.created_at)}</span>
+                            <span>💬 ${post.reply_count || 0} 回复</span>
+                            ${post.is_pinned ? '<span class="badge-pinned">📌 置顶</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="post-detail-body">
+                        ${escapeHtml(post.content)}
+                    </div>
+                    ${(isAuthor || isAdmin) ? `
+                        <div class="post-actions">
+                            <button class="btn btn-danger" onclick="deletePost()">🗑️ 删除</button>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <div class="replies-section">
+                    <h3>💬 回复 (${post.replies ? post.replies.length : 0})</h3>
+                    <div class="reply-list">
+                        ${post.replies && post.replies.length > 0 ? post.replies.map(r => `
+                            <div class="reply-item">
+                                <div class="reply-content">
+                                    <strong>${escapeHtml(r.username || '匿名')}</strong>
+                                    <span class="reply-time">${formatTime(r.created_at)}</span>
+                                    <p>${escapeHtml(r.content)}</p>
+                                </div>
+                                ${(user.id === r.user_id || isAdmin) ? `
+                                    <button class="btn btn-danger btn-sm" onclick="deleteReply(${r.id})">✕</button>
+                                ` : ''}
+                            </div>
+                        `).join('') : '<p class="empty-replies">还没有回复，来抢沙发吧 🛋️</p>'}
+                    </div>
+
+                    ${token ? `
+                        <div class="reply-form">
+                            <h4>✏️ 写回复</h4>
+                            <textarea id="replyContent" placeholder="输入回复内容..." rows="3"></textarea>
+                            <button class="btn btn-primary" onclick="submitReply()">提交回复</button>
+                        </div>
+                    ` : `
+                        <p class="login-to-reply">请 <a href="/login">登录</a> 后回复</p>
+                    `}
+                </div>
+            `;
+
+            document.getElementById('postDetail').innerHTML = html;
+
+        } catch (error) {
+            document.getElementById('postDetail').innerHTML = `
+                <div class="error-state">❌ 加载失败: ${error.message}</div>
+            `;
+        }
+    }
+
+    async function submitReply() {
+        const content = document.getElementById('replyContent').value.trim();
+        if (!content) {
+            alert('请输入回复内容');
+            return;
+        }
+
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch('/api/replies', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ post_id: postId, content })
+            });
+
+            const data = await res.json();
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+
+            loadPost();
+
+        } catch (error) {
+            alert('提交失败: ' + error.message);
+        }
+    }
+
+    async function deletePost() {
+        if (!confirm('确定要删除这个帖子吗？所有回复也会被删除。')) return;
+
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`/api/posts/${postId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            const data = await res.json();
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+
+            window.location.href = '/';
+
+        } catch (error) {
+            alert('删除失败: ' + error.message);
+        }
+    }
+
+    async function deleteReply(replyId) {
+        if (!confirm('确定要删除这条回复吗？')) return;
+
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`/api/replies/${replyId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            const data = await res.json();
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+
+            loadPost();
+
+        } catch (error) {
+            alert('删除失败: ' + error.message);
+        }
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+        return String(text).replace(/[&<>"']/g, m => map[m]);
+    }
+
+    function formatTime(ts) {
+        if (!ts) return '';
+        const d = new Date(ts);
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+
+    document.addEventListener('DOMContentLoaded', loadPost);
+</script>
+{% endblock %}
