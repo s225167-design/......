@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}个人主页 - 论坛 V5{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-header">
+        <div class="avatar-placeholder">
+            <span id="profileAvatar">👤</span>
+        </div>
+        <div class="profile-info">
+            <h2 id="profileUsername">用户名</h2>
+            <p id="profileEmail">邮箱</p>
+            <p id="profileJoined">注册时间</p>
+        </div>
+    </div>
+
+    <div class="profile-stats">
+        <div class="stat-item">
+            <span class="stat-number" id="postCount">0</span>
+            <span class="stat-label">帖子</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number" id="replyCount">0</span>
+            <span class="stat-label">回复</span>
+        </div>
+    </div>
+
+    <div class="profile-posts">
+        <h3>📝 我的帖子</h3>
+        <div id="userPosts" class="posts-list"></div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+        if (!token || !user.username) {
+            window.location.href = '/login';
+            return;
+        }
+
+        document.getElementById('profileUsername').textContent = user.username;
+        document.getElementById('profileAvatar').textContent = user.username.charAt(0).toUpperCase();
+
+        try {
+            const res = await fetch('/api/auth/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+
+            if (data.error) {
+                console.error(data.error);
+                return;
+            }
+
+            if (data.email) {
+                document.getElementById('profileEmail').textContent = data.email;
+            }
+            if (data.created_at) {
+                document.getElementById('profileJoined').textContent = `注册于 ${formatTime(data.created_at)}`;
+            }
+
+        } catch (error) {
+            console.error('加载用户信息失败:', error);
+        }
+    });
+
+    function formatTime(ts) {
+        if (!ts) return '';
+        const d = new Date(ts);
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+</script>
+{% endblock %}
